@@ -1,23 +1,32 @@
 package interfaces
 
 import (
+	"log"
+	"time"
+
+	"github.com/BrianToro/ISO8583/adapter/repository"
 	"github.com/BrianToro/ISO8583/application"
+	"github.com/BrianToro/ISO8583/domain/models"
+	repositories_infra "github.com/BrianToro/ISO8583/infrastructure/repositories"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 type APIServer struct {
-	Port string
-	
+	Port       string
+	Repository *repository.NoSQL
 }
 
-func NewAPIServer(port string) *APIServer {
+func NewAPIServer(port string, repository *repository.NoSQL) *APIServer {
 	return &APIServer{
-		Port: port,
+		Port:       port,
+		Repository: repository,
 	}
 }
 
 func (s *APIServer) Run() error {
 	app := fiber.New()
+	app.Use(logger.New())
 	api := app.Group("/api")
 
 	// Register the health route
@@ -34,7 +43,11 @@ func (s *APIServer) health(c *fiber.Ctx) error {
 }
 
 func (s *APIServer) createTransaction(c *fiber.Ctx) error {
-	act := application.NewCreateTransactionInteractor()
-
-	return c.
+	r := repositories_infra.NewTransactionRepositoryImpl(*s.Repository)
+	act := application.NewCreateTransactionInteractor(*r, 10*time.Second)
+	transaction := &models.Transaction{}
+	if err := c.BodyParser(transaction); err != nil {
+		log.Println("error parsing the transaction")
+	}
+	return act.Execute(c.Context(), transaction)
 }
