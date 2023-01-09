@@ -2,11 +2,11 @@ package application
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/BrianToro/ISO8583/domain/models"
 	"github.com/BrianToro/ISO8583/domain/repositories"
+	"github.com/google/uuid"
 )
 
 type (
@@ -18,6 +18,12 @@ type (
 		transactionRepository repositories.TransactionsRepository
 		ctxTimeout            time.Duration
 	}
+)
+
+const (
+	Pending  string = "pending"
+	Approved string = "approved"
+	Failed   string = "failed"
 )
 
 func NewCreateTransactionInteractor(
@@ -32,13 +38,22 @@ func NewCreateTransactionInteractor(
 
 func (us *CreateTransactionIterator) Execute(
 	ctx context.Context,
-	transaction *models.Transaction,
+	createTransaction *models.CreateTransaction,
 ) error {
-	if transaction.GetAmount() <= 0 {
-		return errors.New("transaction has a invalid amount")
+	transaction, err := models.NewTransaction(
+		uuid.New().String(),
+		createTransaction.Amount,
+		createTransaction.Pan,
+		"testing_gateway",
+		Pending,
+		createTransaction.Description,
+		time.Now(),
+	)
+	if err != nil {
+		return err
 	}
 
-	err := us.transactionRepository.Create(transaction)
+	err = us.transactionRepository.Create(transaction)
 	if err != nil {
 		return err
 	}

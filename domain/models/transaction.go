@@ -1,27 +1,41 @@
 package models
 
+import (
+	"errors"
+	"time"
+)
+
 type Transaction struct {
-	Id     string `json:"id"`
-	Amount int    `json:"amount"`
-	Pan    string `json:"pan"`
+	Id          string    `json:"id"`
+	Amount      int       `json:"amount"`
+	Pan         string    `json:"pan"`
+	Gateway     string    `json:"gateway"`
+	Status      string    `json:"status"`
+	Description string    `json:"description"`
+	Created     time.Time `json:"created"`
 }
 
-func NewTransaction(id string, amount int, pan string) *Transaction {
-	return &Transaction{
-		Id:     id,
-		Amount: amount,
-		Pan:    pan,
+func NewTransaction(
+	id string,
+	amount int,
+	pan string,
+	gateway string,
+	status string,
+	description string,
+	created time.Time,
+) (*Transaction, error) {
+
+	if amount < 500 {
+		return nil, errors.New("transaction amount should be more than 500")
 	}
-}
 
-func (t *Transaction) GetId() string {
-	return t.Id
-}
-
-func (t *Transaction) GetAmount() int {
-	return t.Amount
-}
-
-func (t *Transaction) GetPan() string {
-	return t.Pan
+	return &Transaction{
+		Id:          id,
+		Amount:      amount,
+		Pan:         pan,
+		Gateway:     gateway,
+		Status:      status,
+		Description: description,
+		Created:     created,
+	}, nil
 }
